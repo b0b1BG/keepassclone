@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WebPass</title>
+<script src="kdbxweb.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 11px;
+  background: #3a6ea5;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding: 18px 8px 8px;
+}
+
+/* ── window ── */
+#win {
+  width: 740px; max-width: 100%;
+  background: #d4d0c8;
+  border-top: 2px solid #f0ece0; border-left: 2px solid #f0ece0;
+  border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+  box-shadow: 2px 2px 10px rgba(0,0,0,.55);
+}
+
+/* title bar */
+#titlebar {
+  background: linear-gradient(to right, #0a246a 0%, #3d6db5 50%, #a6caf0 100%);
+  padding: 3px 4px 3px 6px;
+  display: flex; align-items: center; gap: 5px; user-select: none;
+}
+#titlebar .ico { font-size: 14px; }
+#titlebar .lbl { color:#fff; font-size:12px; font-weight:bold; flex:1; }
+#titlebar .wb {
+  width:16px; height:14px; line-height:12px; text-align:center;
+  font-size:9px; font-weight:bold; color:#000; cursor:default;
+  background:#d4d0c8;
+  border-top:1px solid #fff; border-left:1px solid #fff;
+  border-right:1px solid #808080; border-bottom:1px solid #808080;
+}
+
+/* menu */
+#menubar { background:#d4d0c8; border-bottom:1px solid #808080; padding:2px; display:flex; }
+#menubar button { background:none; border:none; font:inherit; font-size:11px; padding:2px 8px; cursor:pointer; }
+#menubar button:hover { background:#0a246a; color:#fff; }
+
+/* toolbar */
+#toolbar { background:#d4d0c8; border-bottom:1px solid #808080; padding:3px 4px; display:flex; align-items:center; gap:3px; flex-wrap:wrap; }
+.tb { background:#d4d0c8; border-top:1px solid #fff; border-left:1px solid #fff; border-right:1px solid #808080; border-bottom:1px solid #808080; font:inherit; font-size:11px; padding:2px 7px; cursor:pointer; white-space:nowrap; }
+.tb:active { border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #fff; border-bottom:1px solid #fff; }
+.tb:disabled { color:#808080; cursor:default; }
+.ts { width:1px; height:18px; background:#808080; margin:0 2px; }
+
+/* banner */
+#banner { margin:4px; padding:3px 8px; font-size:10px; display:flex; align-items:center; gap:6px; border:1px solid #888; }
+#banner.locked   { background:#fff0c0; border-color:#c08000; }
+#banner.unlocked { background:#d0f0d0; border-color:#008000; }
+#banner.error    { background:#ffd0d0; border-color:#c00000; }
+#banner.busy     { background:#e0e8ff; border-color:#4060c0; }
+.dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+#banner.locked   .dot { background:#c08000; }
+#banner.unlocked .dot { background:#00a000; }
+#banner.error    .dot { background:#c00000; }
+#banner.busy     .dot { background:#4060c0; }
+
+/* panels */
+.panel { display:none; }
+.panel.active { display:block; }
+.ph { background:linear-gradient(to right,#0a246a,#a6caf0); color:#fff; font-size:11px; font-weight:bold; padding:2px 6px; margin:4px 4px 0; }
+.pb { padding:6px; }
+
+/* lock screen */
+#lock-inner { max-width:300px; margin:6px auto; }
+.fr { display:flex; align-items:center; margin-bottom:6px; gap:4px; }
+.fr label { width:120px; text-align:right; flex-shrink:0; }
+.fi {
+  flex:1; border-top:1px solid #808080; border-left:1px solid #808080;
+  border-right:1px solid #fff; border-bottom:1px solid #fff;
+  padding:2px 4px; font:inherit; background:#fff;
+}
+.fi:focus { outline:2px solid #0a246a; }
+.note { font-size:10px; color:#555; margin-top:4px; }
+
+/* upload zone */
+#upload-zone {
+  border:2px dashed #808080; padding:10px; text-align:center;
+  margin-bottom:8px; background:#f4f0e8; cursor:pointer; font-size:10px; color:#555;
+}
+#upload-zone.drag { border-color:#0a246a; background:#e0e8ff; }
+#upload-zone input { display:none; }
+
+/* table */
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th { background:#d4d0c8; border:1px solid #808080; padding:3px 5px; text-align:left; font-weight:bold; cursor:pointer; user-select:none; white-space:nowrap; }
+th:hover { background:#b8b4ac; }
+td { border:1px solid #c8c8c8; padding:3px 5px; vertical-align:middle; }
+tr:nth-child(even) td { background:#f0f0f0; }
+tr:hover td { background:#c8d8f0; }
+tr.sel td { background:#0a246a; color:#fff; }
+tr.sel td a { color:#adc8ff; }
+#no-rows { padding:10px; color:#888; font-style:italic; text-align:center; }
+
+#search-wrap { display:flex; gap:3px; margin-bottom:5px; }
+#search { flex:1; border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #fff; border-bottom:1px solid #fff; padding:2px 4px; font:inherit; }
+#search:focus { outline:2px solid #0a246a; }
+#group-filter { border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #fff; border-bottom:1px solid #fff; padding:2px 4px; font:inherit; background:#fff; }
+
+/* overlay */
+#overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; align-items:center; justify-content:center; }
+#overlay.open { display:flex; }
+.dlg { background:#d4d0c8; border-top:2px solid #fff; border-left:2px solid #fff; border-right:2px solid #404040; border-bottom:2px solid #404040; min-width:320px; max-width:420px; box-shadow:2px 2px 6px rgba(0,0,0,.4); }
+.dt { background:linear-gradient(to right,#0a246a,#a6caf0); color:#fff; font-size:11px; font-weight:bold; padding:3px 5px; display:flex; align-items:center; gap:5px; }
+.dt .x { margin-left:auto; width:16px; height:14px; line-height:12px; text-align:center; font-size:9px; font-weight:bold; cursor:pointer; background:#d4d0c8; color:#000; border-top:1px solid #fff; border-left:1px solid #fff; border-right:1px solid #808080; border-bottom:1px solid #808080; }
+.db { padding:10px 12px; }
+.df { padding:6px 12px 10px; display:flex; justify-content:flex-end; gap:5px; }
+.btn { background:#d4d0c8; border-top:1px solid #fff; border-left:1px solid #fff; border-right:1px solid #808080; border-bottom:1px solid #808080; font:inherit; font-size:11px; padding:3px 14px; cursor:pointer; min-width:68px; }
+.btn:active { border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #fff; border-bottom:1px solid #fff; }
+.btn.def { border:2px solid #000; padding:2px 12px; }
+
+.efi { flex:1; border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #fff; border-bottom:1px solid #fff; padding:2px 4px; font:inherit; background:#fff; }
+.efi:focus { outline:2px solid #0a246a; }
+.pw-row { display:flex; gap:3px; flex:1; }
+.pw-row .efi { flex:1; }
+
+/* status bar */
+#sb { background:#d4d0c8; border-top:1px solid #808080; padding:2px 4px; display:flex; gap:4px; font-size:10px; width:740px; max-width:100%; }
+.sc { border-top:1px solid #808080; border-left:1px solid #808080; border-right:1px solid #fff; border-bottom:1px solid #fff; padding:1px 6px; }
+</style>
+</head>
+<body>
+<div id="win">
+
+  <div id="titlebar">
+    <span class="ico">🔒</span>
+    <span class="lbl">WebPass — KeePass Database Manager</span>
+    <span class="wb">_</span><span class="wb">□</span><span class="wb">✕</span>
+  </div>
+
+  <div id="menubar">
+    <button onclick="doLock()">🔒 Lock</button>
+    <button onclick="if(S.open)openAdd()" id="mb-add">➕ New Entry</button>
+    <button onclick="if(S.open)doSave()" id="mb-save">💾 Save</button>
+    <button onclick="dlgShow('dlg-about')">❓ About</button>
+  </div>
+
+  <div id="toolbar">
+    <button class="tb" onclick="doLock()">🔒 Lock</button>
+    <div class="ts"></div>
+    <button class="tb" id="tb-add"  onclick="openAdd()"  disabled>➕ New</button>
+    <button class="tb" id="tb-edit" onclick="openEdit()" disabled>✏️ Edit</button>
+    <button class="tb" id="tb-del"  onclick="doDelete()" disabled>🗑 Delete</button>
+    <div class="ts"></div>
+    <button class="tb" id="tb-save" onclick="doSave()"   disabled>💾 Save to Server</button>
+    <div class="ts"></div>
+    <button class="tb" id="tb-cu"   onclick="doCopy('u')" disabled>👤 Copy User</button>
+    <button class="tb" id="tb-cp"   onclick="doCopy('p')" disabled>🔑 Copy PW</button>
+    <button class="tb" id="tb-curl" onclick="doCopy('l')" disabled>🌐 Copy URL</button>
+  </div>
+
+  <div id="banner" class="locked">
+    <div class="dot"></div>
+    <span id="btxt">Database locked. Enter your master password to unlock.</span>
+  </div>
+
+  <!-- LOCK PANEL -->
+  <div class="panel active" id="panel-lock">
+    <div class="ph">🔒 Open Database</div>
+    <div class="pb">
+      <div id="lock-inner">
+
+        <!-- upload zone (shown when no vault on server) -->
+        <div id="upload-zone" onclick="el('file-input').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="onDrop(event)">
+          <input type="file" id="file-input" accept=".kdbx" onchange="onFileChosen(this.files[0])">
+          <div id="upload-txt">📂 Drop your <strong>.kdbx</strong> file here, or click to browse</div>
+          <div id="upload-sub" style="margin-top:4px;font-size:10px;color:#888"></div>
+        </div>
+
+        <div class="fr">
+          <label>Master password:</label>
+          <input class="fi" type="password" id="mp" autocomplete="current-password"
+                 onkeydown="if(event.key==='Enter')doUnlock()">
+        </div>
+        <div class="fr" id="kf-row" style="display:none">
+          <label>Key file:</label>
+          <input class="fi" type="file" id="kf-input" style="padding:1px">
+        </div>
+        <div style="display:flex;gap:5px;margin-top:4px;">
+          <button class="btn def" onclick="doUnlock()" id="btn-unlock">Unlock</button>
+          <button class="btn" onclick="el('kf-row').style.display = el('kf-row').style.display==='none'?'flex':'none'">Key File…</button>
+        </div>
+        <p class="note" id="lock-note">Checking server…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VAULT PANEL -->
+  <div class="panel" id="panel-vault">
+    <div class="ph">🔓 <span id="db-name">vault.kdbx</span> — <span id="entry-count">0</span> entries</div>
+    <div class="pb">
+      <div id="search-wrap">
+        <input id="search" type="text" placeholder="🔍 Search entries…" oninput="render()">
+        <select id="group-filter" onchange="render()"><option value="">All Groups</option></select>
+        <button class="tb" onclick="el('search').value='';el('group-filter').value='';render()">Clear</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('title')">Title</th>
+          <th onclick="sortBy('username')">Username</th>
+          <th onclick="sortBy('url')">URL</th>
+          <th>Password</th>
+          <th onclick="sortBy('group')">Group</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="no-rows" style="display:none">No entries found.</div>
+    </div>
+  </div>
+
+</div><!-- /win -->
+
+<div id="sb">
+  <div class="sc" id="sc-e">Entries: —</div>
+  <div class="sc" id="sc-s">Selected: none</div>
+  <div class="sc" id="sc-srv">Server: —</div>
+  <div class="sc" id="sc-mod">Changes: none</div>
+</div>
+
+<!-- DIALOGS -->
+<div id="overlay">
+
+  <!-- Entry edit/add -->
+  <div class="dlg" id="dlg-entry">
+    <div class="dt"><span id="dlg-e-ico">➕</span> <span id="dlg-e-lbl">Add Entry</span><span class="x" onclick="dlgClose()">✕</span></div>
+    <div class="db">
+      <input type="hidden" id="eid">
+      <div class="fr"><label style="width:80px;text-align:right">Title:</label>    <input class="efi" type="text"     id="f-title" placeholder="e.g. Gmail"></div>
+      <div class="fr"><label style="width:80px;text-align:right">Username:</label> <input class="efi" type="text"     id="f-user"  autocomplete="off"></div>
+      <div class="fr"><label style="width:80px;text-align:right">Password:</label>
+        <div class="pw-row">
+          <input class="efi" type="password" id="f-pw" autocomplete="new-password">
+          <button class="tb" onclick="tglPw()">👁</button>
+          <button class="tb" onclick="genPw()">Gen</button>
+        </div>
+      </div>
+      <div class="fr"><label style="width:80px;text-align:right">URL:</label>      <input class="efi" type="text"     id="f-url"></div>
+      <div class="fr"><label style="width:80px;text-align:right">Notes:</label>    <textarea id="f-notes" rows="3" style="flex:1;border-top:1px solid #808080;border-left:1px solid #808080;border-right:1px solid #fff;border-bottom:1px solid #fff;padding:2px 4px;font:inherit;resize:vertical"></textarea></div>
+    </div>
+    <div class="df">
+      <button class="btn def" onclick="saveEntry()">OK</button>
+      <button class="btn" onclick="dlgClose()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- About -->
+  <div class="dlg" id="dlg-about">
+    <div class="dt">❓ About WebPass <span class="x" onclick="dlgClose()">✕</span></div>
+    <div class="db">
+      <p><strong>WebPass v2.0</strong></p><br>
+      <p>Opens, edits, and saves your KeePass <strong>.kdbx</strong> database from any browser.</p><br>
+      <p>Decryption happens entirely in your browser using <strong>kdbxweb</strong>. The server stores only your encrypted .kdbx file — it never sees plaintext.</p><br>
+      <p>Compatible with KeePassXC. Open the same file in KeePassXC and WebPass simultaneously — just make sure to save and reload to avoid conflicts.</p>
+    </div>
+    <div class="df"><button class="btn def" onclick="dlgClose()">OK</button></div>
+  </div>
+
+  <!-- Msg -->
+  <div class="dlg" id="dlg-msg">
+    <div class="dt"><span id="msg-ico">ℹ️</span> <span id="msg-title">Info</span><span class="x" onclick="dlgClose()">✕</span></div>
+    <div class="db"><p id="msg-body" style="white-space:pre-wrap"></p></div>
+    <div class="df"><button class="btn def" onclick="dlgClose()">OK</button></div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════
+const S = {
+  open: false,
+  db: null,          // kdbxweb Kdbx instance
+  entries: [],       // flat array of { id, title, username, password, url, notes, group, kdbxEntry }
+  selId: null,
+  sortField: 'title',
+  sortAsc: true,
+  dirty: false,
+  kdbxFile: null,    // ArrayBuffer of chosen .kdbx (before upload / after download)
+  serverHasVault: false,
+};
+
+// ════════════════════════════════════════════════════
+//  BOOT — check server
+// ════════════════════════════════════════════════════
+(async () => {
+  try {
+    const r = await fetch('/api/vault/exists');
+    const d = await r.json();
+    S.serverHasVault = d.exists;
+    if (d.exists) {
+      el('upload-zone').style.display = 'none';
+      el('lock-note').textContent = `Vault on server (${(d.size/1024).toFixed(1)} KB). Enter master password to open.`;
+    } else {
+      el('lock-note').textContent = 'No vault on server yet. Upload your .kdbx file above, then enter your master password.';
+    }
+  } catch {
+    el('lock-note').textContent = 'Cannot reach server.';
+  }
+})();
+
+// ════════════════════════════════════════════════════
+//  FILE UPLOAD (initial .kdbx upload)
+// ════════════════════════════════════════════════════
+function onDrop(e) {
+  e.preventDefault();
+  el('upload-zone').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) onFileChosen(f);
+}
+
+function onFileChosen(file) {
+  if (!file || !file.name.endsWith('.kdbx')) {
+    alert('Please choose a .kdbx file.');
+    return;
+  }
+  const r = new FileReader();
+  r.onload = evt => {
+    S.kdbxFile = evt.target.result;
+    el('upload-txt').textContent = `✅ ${file.name} loaded (${(file.size/1024).toFixed(1)} KB)`;
+    el('upload-sub').textContent = 'Enter master password below to unlock, then save to server.';
+    el('lock-note').textContent  = 'File ready. Enter your master password and click Unlock.';
+  };
+  r.readAsArrayBuffer(file);
+}
+
+// ════════════════════════════════════════════════════
+//  UNLOCK
+// ════════════════════════════════════════════════════
+async function doUnlock() {
+  const pw = el('mp').value;
+  if (!pw) { alert('Enter your master password.'); return; }
+
+  setBanner('busy', 'Decrypting…');
+  el('btn-unlock').disabled = true;
+
+  try {
+    let buf;
+
+    if (S.kdbxFile) {
+      // user dropped a local file
+      buf = S.kdbxFile;
+    } else if (S.serverHasVault) {
+      // fetch from server
+      setBanner('busy', 'Downloading from server…');
+      const res = await fetch('/api/vault');
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      buf = await res.arrayBuffer();
+    } else {
+      setBanner('error', 'No .kdbx file. Upload one above.');
+      el('btn-unlock').disabled = false;
+      return;
+    }
+
+    // build credentials
+    const creds = buildCredentials(pw);
+    let db;
+    try {
+      db = await kdbxweb.Kdbx.load(buf, creds);
+    } catch (e) {
+      setBanner('error', 'Wrong password or corrupted file. (' + e.message + ')');
+      el('btn-unlock').disabled = false;
+      return;
+    }
+
+    S.db    = db;
+    S.open  = true;
+    S.dirty = false;
+    S.kdbxFile = buf; // keep original buf
+
+    el('db-name').textContent = db.meta.name || 'vault.kdbx';
+    extractEntries();
+    openVaultPanel();
+
+    // if user uploaded a local file, auto-save to server
+    if (!S.serverHasVault) {
+      await doSave(true);
+      S.serverHasVault = true;
+    }
+
+  } catch (e) {
+    setBanner('error', 'Error: ' + e.message);
+  }
+  el('btn-unlock').disabled = false;
+}
+
+function buildCredentials(pw) {
+  const kfInput = el('kf-input');
+  if (kfInput.files && kfInput.files[0]) {
+    // key file
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = e => {
+        const creds = new kdbxweb.Credentials(
+          kdbxweb.ProtectedValue.fromString(pw),
+          e.target.result
+        );
+        res(creds);
+      };
+      fr.onerror = rej;
+      fr.readAsArrayBuffer(kfInput.files[0]);
+    });
+  }
+  return new kdbxweb.Credentials(kdbxweb.ProtectedValue.fromString(pw));
+}
+
+// ════════════════════════════════════════════════════
+//  EXTRACT ENTRIES from kdbx groups (recursive)
+// ════════════════════════════════════════════════════
+function extractEntries() {
+  S.entries = [];
+  walkGroup(S.db.getDefaultGroup(), '');
+  populateGroupFilter();
+}
+
+function walkGroup(group, path) {
+  const groupName = path ? path + ' / ' + group.name : group.name;
+  for (const entry of group.entries) {
+    if (entry.uuid.empty) continue;
+    S.entries.push({
+      id:       entry.uuid.id,
+      title:    fieldStr(entry, 'Title'),
+      username: fieldStr(entry, 'UserName'),
+      password: fieldProt(entry, 'Password'),
+      url:      fieldStr(entry, 'URL'),
+      notes:    fieldStr(entry, 'Notes'),
+      group:    groupName,
+      kdbxEntry: entry,
+    });
+  }
+  for (const sub of group.groups) walkGroup(sub, groupName);
+}
+
+function fieldStr(entry, name) {
+  const f = entry.fields.get(name);
+  if (!f) return '';
+  if (f instanceof kdbxweb.ProtectedValue) return f.getText();
+  return f || '';
+}
+function fieldProt(entry, name) {
+  const f = entry.fields.get(name);
+  if (!f) return '';
+  if (f instanceof kdbxweb.ProtectedValue) return f.getText();
+  return f || '';
+}
+
+function populateGroupFilter() {
+  const sel = el('group-filter');
+  const groups = [...new Set(S.entries.map(e => e.group))].sort();
+  sel.innerHTML = '<option value="">All Groups</option>';
+  groups.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
+    sel.appendChild(o);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  OPEN / LOCK PANEL
+// ════════════════════════════════════════════════════
+function openVaultPanel() {
+  el('panel-lock').classList.remove('active');
+  el('panel-vault').classList.add('active');
+  el('mp').value = '';
+  setBanner('unlocked', `Opened: ${S.db.meta.name || 'vault.kdbx'}`);
+  ['tb-add','tb-save'].forEach(id => el(id).disabled = false);
+  ['mb-add','mb-save'].forEach(id => el(id).disabled = false);
+  setStatus('srv', 'Server: loaded ✓');
+  render();
+}
+
+function doLock() {
+  if (S.dirty && !confirm('Unsaved changes — lock anyway?')) return;
+  S.open = false; S.db = null; S.entries = []; S.selId = null; S.dirty = false;
+  el('panel-vault').classList.remove('active');
+  el('panel-lock').classList.add('active');
+  setBanner('locked', 'Database locked.');
+  ['tb-add','tb-edit','tb-del','tb-save','tb-cu','tb-cp','tb-curl'].forEach(id => el(id).disabled = true);
+  setStatus('e', 'Entries: —'); setStatus('s', 'Selected: none'); setStatus('srv', 'Server: —'); setStatus('mod', 'Changes: none');
+}
+
+// ════════════════════════════════════════════════════
+//  SAVE — re-encrypt and POST raw .kdbx bytes
+// ════════════════════════════════════════════════════
+async function doSave(silent = false) {
+  setStatus('srv', 'Server: saving…');
+  try {
+    const buf = await S.db.save();
+    const res = await fetch('/api/vault', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: buf,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
+    S.dirty = false;
+    setStatus('srv', 'Server: saved ✓');
+    setStatus('mod', 'Changes: none');
+    if (!silent) setBanner('unlocked', 'Saved to server ✓');
+  } catch (e) {
+    setStatus('srv', 'Server: FAILED');
+    if (!silent) showMsg('Save Failed', e.message, '⚠️');
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  TABLE RENDER
+// ════════════════════════════════════════════════════
+function render() {
+  const q  = el('search').value.toLowerCase();
+  const gf = el('group-filter').value;
+  let rows = S.entries.filter(e => {
+    if (gf && e.group !== gf) return false;
+    if (!q) return true;
+    return e.title.toLowerCase().includes(q)    ||
+           e.username.toLowerCase().includes(q) ||
+           (e.url||'').toLowerCase().includes(q)||
+           (e.notes||'').toLowerCase().includes(q);
+  });
+  rows.sort((a,b)=>{
+    const va=(a[S.sortField]||'').toLowerCase(), vb=(b[S.sortField]||'').toLowerCase();
+    return S.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+
+  const tb = el('tbody');
+  tb.innerHTML = '';
+  el('no-rows').style.display = rows.length ? 'none' : 'block';
+  el('entry-count').textContent = S.entries.length;
+  setStatus('e', `Entries: ${S.entries.length}`);
+
+  rows.forEach(e => {
+    const tr = document.createElement('tr');
+    if (e.id === S.selId) tr.classList.add('sel');
+    const sh = u => { try { return new URL(u).hostname; } catch { return u; } };
+    tr.innerHTML = `
+      <td>🔑 ${x(e.title)}</td>
+      <td>${x(e.username)}</td>
+      <td>${e.url ? `<a href="${x(e.url)}" target="_blank">${x(sh(e.url))}</a>` : ''}</td>
+      <td style="font-family:monospace;letter-spacing:2px;color:#666">••••••••</td>
+      <td style="color:#666;font-size:10px">${x(e.group)}</td>`;
+    tr.onclick    = () => select(e.id);
+    tr.ondblclick = () => { select(e.id); openEdit(); };
+    tb.appendChild(tr);
+  });
+}
+
+function select(id) {
+  S.selId = id;
+  render();
+  const on = !!id;
+  ['tb-edit','tb-del','tb-cu','tb-cp','tb-curl'].forEach(i => el(i).disabled = !on);
+  const e = getSel();
+  setStatus('s', e ? `Selected: ${e.title}` : 'Selected: none');
+}
+function getSel() { return S.entries.find(e => e.id === S.selId); }
+function sortBy(f) { if(S.sortField===f) S.sortAsc=!S.sortAsc; else{S.sortField=f;S.sortAsc=true;} render(); }
+
+// ════════════════════════════════════════════════════
+//  ADD / EDIT / DELETE
+// ════════════════════════════════════════════════════
+function openAdd() {
+  el('dlg-e-lbl').textContent='Add Entry'; el('dlg-e-ico').textContent='➕';
+  el('eid').value='';
+  ['f-title','f-user','f-pw','f-url','f-notes'].forEach(id=>el(id).value='');
+  el('f-pw').type='password';
+  dlgShow('dlg-entry');
+  setTimeout(()=>el('f-title').focus(),50);
+}
+
+function openEdit() {
+  const e = getSel(); if(!e) return;
+  el('dlg-e-lbl').textContent='Edit Entry'; el('dlg-e-ico').textContent='✏️';
+  el('eid').value    = e.id;
+  el('f-title').value= e.title;
+  el('f-user').value = e.username;
+  el('f-pw').value   = e.password;
+  el('f-url').value  = e.url||'';
+  el('f-notes').value= e.notes||'';
+  el('f-pw').type='password';
+  dlgShow('dlg-entry');
+}
+
+function saveEntry() {
+  const title = el('f-title').value.trim();
+  if (!title) { alert('Title is required.'); return; }
+  const id = el('eid').value;
+
+  if (id) {
+    // edit existing kdbx entry
+    const flat = S.entries.find(e=>e.id===id);
+    if (!flat) return;
+    const ke = flat.kdbxEntry;
+    ke.fields.set('Title',    el('f-title').value.trim());
+    ke.fields.set('UserName', el('f-user').value.trim());
+    ke.fields.set('Password', kdbxweb.ProtectedValue.fromString(el('f-pw').value));
+    ke.fields.set('URL',      el('f-url').value.trim());
+    ke.fields.set('Notes',    el('f-notes').value.trim());
+    ke.times.lastModTime = new Date();
+  } else {
+    // new entry — add to default group
+    const group = S.db.getDefaultGroup();
+    const entry = S.db.createEntry(group);
+    entry.fields.set('Title',    el('f-title').value.trim());
+    entry.fields.set('UserName', el('f-user').value.trim());
+    entry.fields.set('Password', kdbxweb.ProtectedValue.fromString(el('f-pw').value));
+    entry.fields.set('URL',      el('f-url').value.trim());
+    entry.fields.set('Notes',    el('f-notes').value.trim());
+  }
+
+  S.dirty = true;
+  setStatus('mod', 'Changes: unsaved ●');
+  el('tb-save').disabled = false;
+  dlgClose();
+  extractEntries();
+  render();
+}
+
+function doDelete() {
+  const e = getSel(); if(!e) return;
+  if (!confirm(`Delete "${e.title}"?\nThis cannot be undone until you save.`)) return;
+  S.db.remove(e.kdbxEntry);
+  S.selId = null; S.dirty = true;
+  setStatus('mod', 'Changes: unsaved ●');
+  select(null);
+  extractEntries();
+  render();
+}
+
+// ════════════════════════════════════════════════════
+//  CLIPBOARD
+// ════════════════════════════════════════════════════
+function doCopy(field) {
+  const e = getSel(); if(!e) return;
+  const val = field==='u' ? e.username : field==='p' ? e.password : e.url;
+  const name = field==='u' ? 'username' : field==='p' ? 'password' : 'URL';
+  navigator.clipboard.writeText(val||'').then(()=>{
+    setStatus('s', `Copied ${name} ✓`);
+    setTimeout(()=>{ const s=getSel(); setStatus('s',s?`Selected: ${s.title}`:'Selected: none'); },2000);
+  }).catch(()=>alert('Clipboard access denied.'));
+}
+
+// ════════════════════════════════════════════════════
+//  PW GEN
+// ════════════════════════════════════════════════════
+function genPw() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%^&*';
+  const arr=new Uint8Array(20); crypto.getRandomValues(arr);
+  el('f-pw').value=[...arr].map(b=>chars[b%chars.length]).join('');
+  el('f-pw').type='text';
+}
+function tglPw(){ const f=el('f-pw'); f.type=f.type==='password'?'text':'password'; }
+
+// ════════════════════════════════════════════════════
+//  DIALOGS
+// ════════════════════════════════════════════════════
+let _dlg=null;
+function dlgShow(id){
+  document.querySelectorAll('.dlg').forEach(d=>d.style.display='none');
+  el(id).style.display='block'; el('overlay').classList.add('open'); _dlg=id;
+}
+function dlgClose(){ el('overlay').classList.remove('open'); document.querySelectorAll('.dlg').forEach(d=>d.style.display='none'); _dlg=null; }
+el('overlay').addEventListener('click',e=>{ if(e.target===el('overlay'))dlgClose(); });
+function showMsg(title,body,ico='ℹ️'){ el('msg-title').textContent=title; el('msg-body').textContent=body; el('msg-ico').textContent=ico; dlgShow('dlg-msg'); }
+
+// ════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════
+function el(id){ return document.getElementById(id); }
+function x(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setBanner(state,txt){ el('banner').className=state; el('btxt').textContent=txt; }
+function setStatus(k,t){ el('sc-'+k).textContent=t; }
+
+window.addEventListener('beforeunload',e=>{ if(S.dirty){e.preventDefault();e.returnValue='';} });
+</script>
+</body>
+</html>

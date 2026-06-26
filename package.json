@@ -1,0 +1,12 @@
+{
+  "name": "webpass",
+  "version": "1.0.0",
+  "description": "Minimal self-hosted cloud password manager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

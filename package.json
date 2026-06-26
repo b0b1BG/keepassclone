@@ -1,12 +1,8 @@
 {
   "name": "webpass",
-  "version": "1.0.0",
-  "description": "Minimal self-hosted cloud password manager",
+  "version": "2.0.0",
+  "description": "Self-hosted KeePass .kdbx web manager",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
-  }
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.18.2" }
 }

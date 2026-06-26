@@ -1,49 +1,56 @@
-# WebPass
+# WebPass v2
 
-A minimal self-hosted cloud password manager with an early-2000s UI.
+A minimal self-hosted web interface for your KeePass `.kdbx` database.
 
 ## How it works
 
-- **All encryption runs in your browser** using the Web Crypto API (AES-256-GCM, PBKDF2-SHA256 with 310,000 iterations).
-- The server stores only an **opaque encrypted blob** — it never sees your passwords or master key.
-- Single database, single master password.
+- Your `.kdbx` file lives on the server
+- **All decryption/encryption happens in your browser** using [kdbxweb](https://github.com/keeweb/kdbxweb)
+- The server never sees your master password or plaintext entries
+- KeePassXC can open the same file — just don't edit it in both places at once
 
 ## Setup
 
 ```bash
 npm install
-node server.js        # runs on http://localhost:3000
-```
-
-To run on a different port:
-```bash
-PORT=8080 node server.js
+node server.js        # → http://localhost:3000
+PORT=8080 node server.js   # custom port
 ```
 
 ## First use
 
 1. Open `http://your-server:3000`
-2. Enter a strong master password
-3. Click **New Vault** (first time) or **Unlock** (returning)
-4. Add entries, then click **💾 Save** — this encrypts and sends to the server
+2. Drop your `.kdbx` file into the upload zone
+3. Enter your master password → click **Unlock**
+4. WebPass auto-uploads your `.kdbx` to the server
+5. Next time, just enter your password — no upload needed
 
-## API (all data is opaque base64 to the server)
+## Editing
+
+- **Double-click** a row to edit it
+- Click **💾 Save to Server** after making changes
+- KeePassXC users: re-sync from the server path after WebPass saves
+
+## Production
+
+Put this behind **HTTPS** (nginx/caddy) — never expose over plain HTTP.
+
+```nginx
+location / {
+    proxy_pass http://localhost:3000;
+}
+```
+
+## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/vault/exists` | Check if a vault is stored |
-| GET | `/api/vault/load` | Download the encrypted blob |
-| POST | `/api/vault/save` | Upload encrypted blob `{ data: "<base64>" }` |
-| DELETE | `/api/vault` | Wipe the vault |
+| GET | `/api/vault/exists` | Check if vault is stored |
+| GET | `/api/vault` | Download the `.kdbx` file |
+| POST | `/api/vault` | Upload/overwrite the `.kdbx` file (raw bytes) |
 
-## Data location
+The server validates the kdbx magic bytes (`03 D9 A2 9A`) on upload.
 
-The encrypted vault is stored in `./data/vault.enc`.
+## Data
 
-Back it up however you like — without your master password it's unreadable.
-
-## Security notes
-
-- Put this behind HTTPS (nginx/caddy reverse proxy) in production — never run over plain HTTP on the internet, or your master password is exposed during the unlock request (it never leaves the browser but the encrypted blob goes over the wire).
-- The DELETE endpoint has no auth — add your own middleware if needed.
-- The master password is never sent to the server. Only the AES-256-GCM ciphertext is.
+Stored at `./data/vault.kdbx`. Back this up — it's your real KeePass file.

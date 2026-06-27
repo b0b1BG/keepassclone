@@ -1,14 +1,9 @@
 /*! kdbxweb v2.1.1, (c) 2021 Antelle, opensource.org/licenses/MIT */
 (function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("crypto"), require("@xmldom/xmldom"));
-	else if(typeof define === 'function' && define.amd)
-		define(["crypto", "@xmldom/xmldom"], factory);
-	else if(typeof exports === 'object')
-		exports["kdbxweb"] = factory(require("crypto"), require("@xmldom/xmldom"));
-	else
-		root["kdbxweb"] = factory(root["crypto"], root["@xmldom/xmldom"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_crypto__, __WEBPACK_EXTERNAL_MODULE__xmldom_xmldom__) {
+	var result = factory(root["crypto"], root["@xmldom/xmldom"]);
+	root["kdbxweb"] = result;
+	if(typeof window !== 'undefined') window["kdbxweb"] = result;
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this, function(__WEBPACK_EXTERNAL_MODULE_crypto__, __WEBPACK_EXTERNAL_MODULE__xmldom_xmldom__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({

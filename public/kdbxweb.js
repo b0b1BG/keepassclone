@@ -290,13 +290,8 @@ function safeRandomWeb(len) {
     return randomBytes;
 }
 function random(len) {
-    var _a;
-    if ((_a = __webpack_require__.g.crypto) === null || _a === void 0 ? void 0 : _a.subtle) {
-        return safeRandomWeb(len);
-    }
-    else {
-        return new Uint8Array(nodeCrypto.randomBytes(len));
-    }
+    // Always use browser crypto.getRandomValues — works on HTTP and HTTPS.
+    return safeRandomWeb(len);
 }
 exports.random = random;
 function chacha20(data, key, iv) {
